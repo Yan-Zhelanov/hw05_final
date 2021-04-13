@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Технологии{% endblock %}
+{% block content %}
+{% load user_filters %}
+  <main role="main" class="container">
+    <div class="row">
+      <!-- Левый вспомогательный блок -->
+      <div class="col-md-3 mb-3 mt-1">
+        <div class="card">
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <div class="h3">
+                  Технологии
+                </div> 
+              </li>
+              <li class="list-group-item">
+                <div class="h6 text-muted">
+                  VSCode, Django, Pylance, Flake8, Chrome
+                </div>
+              </li>
+            </ul>                                               
+          </div>                    
+        </div>                
+      </div>
+      <!-- Тело страницы -->
+      <div class="col-md-9">
+        <div class="card-body">                    
+          <div class="card-text">
+            <p class="post-text">
+              Мне очень нравится Visual Studio,
+              когда-то давно я использовал ещё 2010 версию данного продукта,
+              и достаточно долго использовал именно эту версию. Как самый настоящий
+              консерватор, я считал, что лучше этой версии быть не может и вообще,
+              она — это шедевр. Спустя какое-то время меня всё-таки переубедили и
+              уж очень манила эта тёмная тема, поэтому я перешёл на версию 2013...
+              Чуть позже стал пользоваться 2019 версией, а совсем недавно для меня
+              стало открытием, что есть Visual Studio Code, которая весит всего лишь
+              200 мб и которая поддерживает большинство языков...
+            </p>
+          </div>                    
+        </div>                
+      </div>            
+    </div>        
+  </main>
+{% endblock %} 

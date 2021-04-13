@@ -1,0 +1,25 @@
+<nav class="navbar navbar-dark bg-dark">
+  <a class="navbar-brand" href="{% url 'posts:index' %}">
+    <span class="brand-title-red-chars">Ya</span>Tube
+  </a>
+  <nav class="my-2 my-md-0 mr-md-3">
+    {% if user.is_authenticated %}
+      <span class="text-light">
+        Пользователь: <a class="link-red" 
+                         href="{% url 'posts:profile' user %}">{{ user.username }}</a>.
+      </span>
+      <a class="btn btn-outline btn-red nav-btn-post"
+         href="{% url 'posts:new_post' %}"
+         role="button">Добавить пост</a>
+      <a class="p-2 text-light"
+         href="{% url 'password_change' %}">Изменить пароль</a>
+      <a class="p-2 text-light"
+         href="{% url 'logout' %}">Выйти</a>
+    {% else %}
+      <a class="p-2 text-light"
+         href="{% url 'login' %}">Войти</a> |
+      <a class="p-2 text-light"
+         href="{% url 'signup' %}">Регистрация</a>
+    {% endif %}
+  </nav>
+</nav>

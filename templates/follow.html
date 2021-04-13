@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Подписки{% endblock %}
+{% block header %}Подписки{% endblock %}
+{% block content %}
+  {% for post in page %}
+    {% include "post-item.html" with post=post %}
+  {% endfor %}
+  {% include "paginator.html" %}
+{% endblock %}

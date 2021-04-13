@@ -1,0 +1,13 @@
+{% extends "base.html" %} 
+{% block title %}Ошибка 500{% endblock %}
+{% block content %}
+  <main role="main" class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <h1 class="header text-red">Ошибка 500</h1>
+        <p class="text-white">Ошибка на сервере, попробуйте обновить страницу или обратиться позже</p>
+        <p class="text-white"><a href="{% url 'posts:index' %}">Вернуться на главную</a></p>
+      </div>
+    </div>
+  </main>
+{% endblock %} 
