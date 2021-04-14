@@ -24,6 +24,9 @@ class ViewsTest(TestCase):
         cls.user = User.objects.create_user(
             username=constants.USERNAME,
         )
+        cls.another_user = User.objects.create_user(
+            username='Test-User-2',
+        )
         cls.group = Group.objects.create(
             title=constants.GROUP_NAME,
             slug=constants.GROUP_SLUG,
@@ -45,17 +48,17 @@ class ViewsTest(TestCase):
             author=cls.user,
             image=cls.IMAGE_FILE,
         )
+        cls.another_user.follower.create(author=cls.user)
         cls.POST_URL = reverse('posts:post',
                                args=[cls.user.username, cls.post.id])
         cls.POST_EDIT_URL = reverse('posts:post_edit',
                                     args=[cls.user.username, cls.post.id])
         cls.ANOTHER_GROUP_URL = reverse('posts:group',
                                         args=[cls.another_group.slug])
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.user)
-        # cls.cache_test = caches['default']
-        # cls.cache_test.clear()
-        # cls.cache_test.close()
+        cls.author_client = Client()
+        cls.author_client.force_login(cls.user)
+        cls.another_client = Client()
+        cls.another_client.force_login(cls.another_user)
 
     @classmethod
     def tearDownClass(cls):
@@ -63,8 +66,11 @@ class ViewsTest(TestCase):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
     def test_post_in_someone_else_group(self):
-        """Проверка не наличия поста в неправильной группе"""
-        response = self.authorized_client.get(self.ANOTHER_GROUP_URL)
+        """Проверка не наличия поста в неправильной группе и у неподписанного
+        пользователя"""
+        response = self.author_client.get(self.ANOTHER_GROUP_URL)
+        self.assertNotIn(self.post, response.context['page'])
+        response = self.author_client.get(constants.FOLLOW_URL)
         self.assertNotIn(self.post, response.context['page'])
 
     def test_post_correct_view_on_pages(self):
@@ -73,11 +79,12 @@ class ViewsTest(TestCase):
             [constants.INDEX_URL, 'page'],
             [constants.PROFILE_URL, 'page'],
             [constants.GROUP_URL, 'page'],
+            [constants.FOLLOW_URL, 'page'],
             [self.POST_URL, 'post'],
         ]
         for url, context_name in urls:
             with self.subTest(url=url):
-                response = self.authorized_client.get(url)
+                response = self.another_client.get(url)
                 if context_name == 'post':
                     post = response.context[context_name]
                 elif context_name == 'page':
@@ -98,13 +105,13 @@ class ViewsTest(TestCase):
         ]
         for url in urls:
             with self.subTest(url=url):
-                author = self.authorized_client.get(url).context['author']
+                author = self.author_client.get(url).context['author']
                 self.assertEqual(author.username, self.user.username)
                 self.assertEqual(author.id, self.user.id)
 
     def test_group_correct_context(self):
         """Проверка корректного контекста страницы группы"""
-        response = self.authorized_client.get(constants.GROUP_URL)
+        response = self.author_client.get(constants.GROUP_URL)
         group = response.context['group']
         self.assertEqual(group.title, self.group.title)
         self.assertEqual(group.slug, self.group.slug)
@@ -113,16 +120,28 @@ class ViewsTest(TestCase):
 
     def test_cache_working(self):
         """Проверка работы кеша"""
-        response = self.authorized_client.get(constants.INDEX_URL)
+        response = self.author_client.get(constants.INDEX_URL)
         Post.objects.create(
             text='test',
             author=self.user,
         )
-        response2 = self.authorized_client.get(constants.INDEX_URL)
+        response2 = self.author_client.get(constants.INDEX_URL)
         self.assertEqual(response.content, response2.content)
         cache.clear()
-        response3 = self.authorized_client.get(constants.INDEX_URL)
+        response3 = self.author_client.get(constants.INDEX_URL)
         self.assertNotEqual(response2.content, response3.content)
+
+    def test_subscribe_unsubscribe(self):
+        """Проверка корректно работающей подписки и отписки"""
+        self.another_user.follower.get(author=self.user).delete()
+        followers = self.user.following.count()
+        followings = self.another_user.follower.count()
+        self.another_client.get(constants.PROFILE_FOLLOW_URL)
+        self.assertEqual(self.user.following.count(), followings + 1)
+        self.assertEqual(self.another_user.follower.count(), followers + 1)
+        self.another_client.get(constants.PROFILE_UNFOLLOW_URL)
+        self.assertEqual(self.user.following.count(), followings)
+        self.assertEqual(self.another_user.follower.count(), followers)
 
 
 class PaginatorViewsTest(TestCase):
@@ -137,6 +156,10 @@ class PaginatorViewsTest(TestCase):
             slug=constants.GROUP_SLUG,
             description=constants.GROUP_DESCRIPTION,
         )
+        cls.another_user = User.objects.create_user(
+            username='Test-User-2',
+        )
+        cls.another_user.follower.create(author=cls.user)
         for i in range(POSTS_PER_PAGE + 2):
             Post.objects.create(
                 text=f'Test-{i}',
@@ -148,7 +171,8 @@ class PaginatorViewsTest(TestCase):
             author=cls.user
         )
         cls.posts = Post.objects.all()
-        cls.guest_client = Client()
+        cls.author_client = Client()
+        cls.author_client.force_login(cls.another_user)
 
     def test_pages_contains_correct_records(self):
         """Проверка количества постов на страницах главной, профиля и группы"""
@@ -158,11 +182,13 @@ class PaginatorViewsTest(TestCase):
                                               POSTS_PER_PAGE)],
             [constants.GROUP_URL, Paginator(self.group.posts.all(),
                                             POSTS_PER_PAGE)],
+            [constants.FOLLOW_URL, Paginator(self.user.posts.all(),
+                                             POSTS_PER_PAGE)],
         ]
         for url, paginator in urls:
             for page in range(1, paginator.num_pages + 1):
                 with self.subTest(page=page):
-                    response = self.guest_client.get(
+                    response = self.author_client.get(
                         f'{url}?page={page}'
                     )
                     posts_count = len(response.context['page'])

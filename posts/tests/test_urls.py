@@ -29,6 +29,8 @@ class StaticURLTests(TestCase):
                                args=[cls.user.username, cls.post.id])
         cls.POST_EDIT_URL = reverse('posts:post_edit',
                                     args=[cls.user.username, cls.post.id])
+        cls.ADD_COMMENT_URL = reverse('posts:add_comment',
+                                      args=[cls.user.username, cls.post.id])
         cls.LOGIN_URL = reverse('login')
         cls.guest_client = Client()
         cls.author_client = Client()
@@ -48,6 +50,12 @@ class StaticURLTests(TestCase):
             [self.POST_EDIT_URL, self.guest_client, 302],
             [self.POST_EDIT_URL, self.author_client, 200],
             [self.POST_EDIT_URL, self.other_client, 302],
+            [self.ADD_COMMENT_URL, self.guest_client, 302],
+            [self.ADD_COMMENT_URL, self.author_client, 302],
+            [constants.PROFILE_FOLLOW_URL, self.guest_client, 302],
+            [constants.PROFILE_FOLLOW_URL, self.author_client, 302],
+            [constants.PROFILE_UNFOLLOW_URL, self.guest_client, 302],
+            [constants.PROFILE_UNFOLLOW_URL, self.author_client, 302],
             ['this-page-does-not-exist', self.guest_client, 404]
         ]
         for url, client, expected_status_code in urls:
@@ -62,6 +70,17 @@ class StaticURLTests(TestCase):
         urls = [
             [constants.NEW_POST_URL, self.guest_client,
              f'{self.LOGIN_URL}?next={constants.NEW_POST_URL}'],
+            [self.ADD_COMMENT_URL, self.guest_client,
+             f'{self.LOGIN_URL}?next={self.ADD_COMMENT_URL}'],
+            [self.ADD_COMMENT_URL, self.author_client, self.POST_URL],
+            [constants.PROFILE_FOLLOW_URL, self.guest_client,
+             f'{self.LOGIN_URL}?next={constants.PROFILE_FOLLOW_URL}'],
+            [constants.PROFILE_FOLLOW_URL, self.author_client,
+             constants.PROFILE_URL],
+            [constants.PROFILE_UNFOLLOW_URL, self.guest_client,
+             f'{self.LOGIN_URL}?next={constants.PROFILE_UNFOLLOW_URL}'],
+            [constants.PROFILE_UNFOLLOW_URL, self.author_client,
+             constants.PROFILE_URL],
             [self.POST_EDIT_URL, self.guest_client,
              f'{self.LOGIN_URL}?next={self.POST_EDIT_URL}'],
             [self.POST_EDIT_URL, self.other_client,

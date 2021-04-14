@@ -20,11 +20,15 @@ class RoutesTest(TestCase):
             [constants.INDEX_URL, '/'],
             [constants.GROUP_URL, f'/group/{constants.GROUP_SLUG}/'],
             [constants.PROFILE_URL, f'/{user.username}/'],
+            [constants.PROFILE_FOLLOW_URL, f'/{user.username}/follow/'],
+            [constants.PROFILE_UNFOLLOW_URL, f'/{user.username}/unfollow/'],
             [constants.NEW_POST_URL, '/new/'],
             [reverse('posts:post', args=[user.username, post.id]),
              f'/{user.username}/{post.id}/'],
             [reverse('posts:post_edit', args=[user.username, post.id]),
              f'/{user.username}/{post.id}/edit/'],
+            [reverse('posts:add_comment', args=[user.username, post.id]),
+             f'/{user.username}/{post.id}/comment/'],
         ]
         for url, expected_url in urls:
             self.assertEqual(url, expected_url)
