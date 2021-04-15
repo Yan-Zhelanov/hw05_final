@@ -26,7 +26,11 @@
         <a class="btn btn-sm btn-background-red"
            href="{% url 'posts:post' post.author.username post.id %}"
            role="button">
-          Добавить комментарий
+          {% if user.is_authenticated %}
+            Добавить комментарий
+          {% else %}
+            Подробнее
+          {% endif %}
         </a>
         <!-- Ссылка на редактирование поста для автора -->
         {% if user == post.author %}
@@ -39,7 +43,7 @@
       </div>
       <!-- Дата публикации поста -->
       <small class="text-muted">
-        {% if post.group %}
+        {% if not group and post.group %}
           <a class="link-red"
             href="{% url 'posts:group' slug=post.group.slug %}">
             {{ post.group }}

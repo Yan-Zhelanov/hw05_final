@@ -25,7 +25,7 @@ class TestPostForm(TestCase):
             slug=constants.GROUP_SLUG,
             description=constants.GROUP_DESCRIPTION,
         )
-        cls.another_group = Group.objects.create(
+        cls.group2 = Group.objects.create(
             title=constants.GROUP2_NAME,
             slug=constants.GROUP2_SLUG,
             description=constants.GROUP2_DESCRIPTION,
@@ -40,12 +40,19 @@ class TestPostForm(TestCase):
             content=constants.IMAGE,
             content_type='image/jpg',
         )
+        cls.IMAGE_FILE2 = SimpleUploadedFile(
+            name='image2.jpg',
+            content=constants.IMAGE,
+            content_type='image/jpg',
+        )
         cls.POST_URL = reverse('posts:post',
                                args=[cls.user.username, cls.post.id])
         cls.POST_EDIT_URL = reverse('posts:post_edit',
                                     args=[cls.user.username, cls.post.id])
+        cls.LOGIN_URL = reverse('login')
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.user)
+        cls.guest_client = Client()
 
     @classmethod
     def tearDownClass(cls):
@@ -78,8 +85,9 @@ class TestPostForm(TestCase):
             follow=True,
         )
         self.assertRedirects(response, constants.INDEX_URL)
-        self.assertEqual(Post.objects.count(), len(id_posts) + 1)
-        created_post = Post.objects.exclude(id__in=id_posts).first()
+        posts = response.context['page'].paginator.object_list
+        self.assertEqual(len(posts), len(id_posts) + 1)
+        created_post = posts.exclude(id__in=id_posts).first()
         self.assertEqual(created_post.text, post_data['text'])
         self.assertEqual(created_post.group.id, post_data['group'])
         self.assertEqual(created_post.author, self.user)
@@ -91,7 +99,8 @@ class TestPostForm(TestCase):
         expected_posts_count = Post.objects.count()
         modified_post_data = {
             'text': 'Изменённый текст',
-            'group': self.another_group.id,
+            'group': self.group2.id,
+            'image': self.IMAGE_FILE2,
         }
         response = self.authorized_client.post(
             self.POST_EDIT_URL,
@@ -104,3 +113,25 @@ class TestPostForm(TestCase):
         self.assertEqual(post.text, modified_post_data['text'])
         self.assertEqual(post.group.id, modified_post_data['group'])
         self.assertEqual(post.author, self.user)
+        image_file_name = post.image.name.split('/')[1]
+        self.assertEqual(image_file_name, modified_post_data['image'].name)
+
+    def test_guest_creation_and_editing_post(self):
+        """Проверка, что гость не может создать или редактировать пост"""
+        expected_posts_count = Post.objects.count()
+        post_data = {
+            'text': 'Тест-тестовый',
+        }
+        response = self.guest_client.post(
+            constants.NEW_POST_URL,
+            data=post_data,
+            follow=True,
+        )
+        self.assertRedirects(response,
+                             f'{self.LOGIN_URL}?next={constants.NEW_POST_URL}')
+        self.assertEqual(Post.objects.count(), expected_posts_count)
+        self.guest_client.post(
+            self.POST_EDIT_URL,
+            data=post_data,
+        )
+        self.assertNotEqual(self.post.text, post_data['text'])

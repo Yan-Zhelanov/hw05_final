@@ -1,5 +1,3 @@
-from operator import attrgetter
-
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -21,9 +19,7 @@ def index(request):
 
 @login_required
 def follow_index(request):
-    follows = Follow.objects.filter(user=request.user)
-    posts = [post for follow in follows for post in follow.author.posts.all()]
-    posts = sorted(posts, key=attrgetter('pub_date'), reverse=True)
+    posts = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -34,18 +30,19 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    profile = get_object_or_404(User, username=username)
-    if (not request.user.follower.filter(author=profile).exists()
-       and request.user != profile):
-        request.user.follower.create(author=profile)
+    if request.user.username != username:
+        profile = get_object_or_404(User, username=username)
+        if not request.user.follower.filter(author=profile).exists():
+            request.user.follower.create(author=profile)
     return redirect('posts:profile', username)
     # поначалу тут был request.GET.get('next'), но pytest не пускает. = (
 
 
 @login_required
 def profile_unfollow(request, username):
-    profile = get_object_or_404(User, username=username)
-    request.user.follower.filter(author=profile).delete()
+    follow = get_object_or_404(Follow, author__username=username,
+                               user=request.user)
+    follow.delete()
     return redirect('posts:profile', username)
 
 
@@ -75,22 +72,30 @@ def new_post(request):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
+    following = False
+    if request.user.is_authenticated:
+        following = request.user.follower.filter(author=author)
     posts = author.posts.all()
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
     return render(request, 'profile.html', {
         'author': author,
+        'following': following,
         'page': page,
     })
 
 
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, pk=post_id)
+    following = False
+    if request.user.is_authenticated:
+        following = request.user.follower.filter(author=post.author)
     comments = post.comments.all()
     form = CommentForm()
     return render(request, 'post.html', {
         'author': post.author,
+        'following': following,
         'post': post,
         'form': form,
         'comments': comments,

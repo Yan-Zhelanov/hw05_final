@@ -20,6 +20,7 @@ class RoutesTest(TestCase):
             [constants.INDEX_URL, '/'],
             [constants.GROUP_URL, f'/group/{constants.GROUP_SLUG}/'],
             [constants.PROFILE_URL, f'/{user.username}/'],
+            [constants.FOLLOW_URL, '/follow/'],
             [constants.PROFILE_FOLLOW_URL, f'/{user.username}/follow/'],
             [constants.PROFILE_UNFOLLOW_URL, f'/{user.username}/unfollow/'],
             [constants.NEW_POST_URL, '/new/'],

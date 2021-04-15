@@ -53,10 +53,10 @@ class StaticURLTests(TestCase):
             [self.ADD_COMMENT_URL, self.guest_client, 302],
             [self.ADD_COMMENT_URL, self.author_client, 302],
             [constants.PROFILE_FOLLOW_URL, self.guest_client, 302],
-            [constants.PROFILE_FOLLOW_URL, self.author_client, 302],
+            [constants.PROFILE_FOLLOW_URL, self.other_client, 302],
             [constants.PROFILE_UNFOLLOW_URL, self.guest_client, 302],
-            [constants.PROFILE_UNFOLLOW_URL, self.author_client, 302],
-            ['this-page-does-not-exist', self.guest_client, 404]
+            [constants.PROFILE_UNFOLLOW_URL, self.other_client, 302],
+            ['404', self.guest_client, 404]
         ]
         for url, client, expected_status_code in urls:
             with self.subTest(url=url):
@@ -75,11 +75,11 @@ class StaticURLTests(TestCase):
             [self.ADD_COMMENT_URL, self.author_client, self.POST_URL],
             [constants.PROFILE_FOLLOW_URL, self.guest_client,
              f'{self.LOGIN_URL}?next={constants.PROFILE_FOLLOW_URL}'],
-            [constants.PROFILE_FOLLOW_URL, self.author_client,
+            [constants.PROFILE_FOLLOW_URL, self.other_client,
              constants.PROFILE_URL],
             [constants.PROFILE_UNFOLLOW_URL, self.guest_client,
              f'{self.LOGIN_URL}?next={constants.PROFILE_UNFOLLOW_URL}'],
-            [constants.PROFILE_UNFOLLOW_URL, self.author_client,
+            [constants.PROFILE_UNFOLLOW_URL, self.other_client,
              constants.PROFILE_URL],
             [self.POST_EDIT_URL, self.guest_client,
              f'{self.LOGIN_URL}?next={self.POST_EDIT_URL}'],
@@ -96,6 +96,7 @@ class StaticURLTests(TestCase):
             [constants.INDEX_URL, 'index.html'],
             [constants.GROUP_URL, 'group.html'],
             [constants.PROFILE_URL, 'profile.html'],
+            [constants.FOLLOW_URL, 'follow.html'],
             [constants.NEW_POST_URL, 'post-form.html'],
             [self.POST_URL, 'post.html'],
             [self.POST_EDIT_URL, 'post-form.html'],

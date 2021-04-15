@@ -15,6 +15,7 @@ POST_TEXT = 'No changed test text'
 
 INDEX_URL = reverse('posts:index')
 GROUP_URL = reverse('posts:group', args=[GROUP_SLUG])
+GROUP2_URL = reverse('posts:group', args=[GROUP2_SLUG])
 PROFILE_URL = reverse('posts:profile', args=[USERNAME])
 FOLLOW_URL = reverse('posts:follow_index')
 PROFILE_FOLLOW_URL = reverse("posts:profile_follow", args=[USERNAME])

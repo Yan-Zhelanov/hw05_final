@@ -72,7 +72,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'yatube.context_processors.get_year',
-                'yatube.context_processors.following',
             ],
         },
     },

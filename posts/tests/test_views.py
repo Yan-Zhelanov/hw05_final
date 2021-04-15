@@ -8,7 +8,7 @@ from django.core.paginator import Paginator
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.models import Group, Post, User
+from posts.models import Follow, Group, Post, User
 from posts.settings import POSTS_PER_PAGE
 
 from . import constants
@@ -25,14 +25,14 @@ class ViewsTest(TestCase):
             username=constants.USERNAME,
         )
         cls.another_user = User.objects.create_user(
-            username='Test-User-2',
+            username=constants.USERNAME2,
         )
         cls.group = Group.objects.create(
             title=constants.GROUP_NAME,
             slug=constants.GROUP_SLUG,
             description=constants.GROUP_DESCRIPTION,
         )
-        cls.another_group = Group.objects.create(
+        cls.group2 = Group.objects.create(
             title=constants.GROUP2_NAME,
             slug=constants.GROUP2_SLUG,
             description=constants.GROUP2_DESCRIPTION,
@@ -53,8 +53,6 @@ class ViewsTest(TestCase):
                                args=[cls.user.username, cls.post.id])
         cls.POST_EDIT_URL = reverse('posts:post_edit',
                                     args=[cls.user.username, cls.post.id])
-        cls.ANOTHER_GROUP_URL = reverse('posts:group',
-                                        args=[cls.another_group.slug])
         cls.author_client = Client()
         cls.author_client.force_login(cls.user)
         cls.another_client = Client()
@@ -66,10 +64,12 @@ class ViewsTest(TestCase):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
     def test_post_in_someone_else_group(self):
-        """Проверка не наличия поста в неправильной группе и у неподписанного
-        пользователя"""
-        response = self.author_client.get(self.ANOTHER_GROUP_URL)
+        """Проверка не наличия поста в неправильной группе"""
+        response = self.author_client.get(constants.GROUP2_URL)
         self.assertNotIn(self.post, response.context['page'])
+
+    def test_post_in_someone_follow_feed(self):
+        """Проверка не наличия поста у неподписанного пользователя"""
         response = self.author_client.get(constants.FOLLOW_URL)
         self.assertNotIn(self.post, response.context['page'])
 
@@ -94,8 +94,7 @@ class ViewsTest(TestCase):
                 self.assertEqual(post.text, self.post.text)
                 self.assertEqual(post.group, self.post.group)
                 self.assertEqual(post.author, self.post.author)
-                if bool(self.post.image):
-                    self.assertEqual(post.image, self.post.image)
+                self.assertEqual(post.image, self.post.image)
 
     def test_author_appearence_on_pages(self):
         """Проверка отображения автора на страницах"""
@@ -131,17 +130,20 @@ class ViewsTest(TestCase):
         response3 = self.author_client.get(constants.INDEX_URL)
         self.assertNotEqual(response2.content, response3.content)
 
-    def test_subscribe_unsubscribe(self):
-        """Проверка корректно работающей подписки и отписки"""
-        self.another_user.follower.get(author=self.user).delete()
-        followers = self.user.following.count()
-        followings = self.another_user.follower.count()
+    def test_subscribe_work(self):
+        """Проверка корректно работающей подписки"""
+        Follow.objects.all().delete()
         self.another_client.get(constants.PROFILE_FOLLOW_URL)
-        self.assertEqual(self.user.following.count(), followings + 1)
-        self.assertEqual(self.another_user.follower.count(), followers + 1)
+        self.assertTrue(Follow.objects.filter(user=self.another_user,
+                                              author=self.user).exists())
+
+    def test_unsubscribe_work(self):
+        """Проверка корректно работающей отписки"""
+        Follow.objects.all().delete()
+        Follow.objects.create(user=self.another_user, author=self.user)
         self.another_client.get(constants.PROFILE_UNFOLLOW_URL)
-        self.assertEqual(self.user.following.count(), followings)
-        self.assertEqual(self.another_user.follower.count(), followers)
+        self.assertFalse(Follow.objects.filter(user=self.another_user,
+                                               author=self.user).exists())
 
 
 class PaginatorViewsTest(TestCase):
@@ -157,7 +159,7 @@ class PaginatorViewsTest(TestCase):
             description=constants.GROUP_DESCRIPTION,
         )
         cls.another_user = User.objects.create_user(
-            username='Test-User-2',
+            username=constants.USERNAME2,
         )
         cls.another_user.follower.create(author=cls.user)
         for i in range(POSTS_PER_PAGE + 2):
