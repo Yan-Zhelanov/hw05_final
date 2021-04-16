@@ -30,9 +30,10 @@ class TestPostForm(TestCase):
             slug=constants.GROUP2_SLUG,
             description=constants.GROUP2_DESCRIPTION,
         )
-        cls.post = Post.objects.create(
-            text=constants.POST_TEXT,
-            author=cls.user,
+        cls.group3 = Group.objects.create(
+            title='Test-Group-3',
+            slug='test-group-3',
+            description='Test description for Group 3.',
         )
         settings.MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
         cls.IMAGE_FILE = SimpleUploadedFile(
@@ -44,6 +45,16 @@ class TestPostForm(TestCase):
             name='image2.jpg',
             content=constants.IMAGE,
             content_type='image/jpg',
+        )
+        cls.IMAGE_FILE3 = SimpleUploadedFile(
+            name='image3.jpg',
+            content=constants.IMAGE,
+            content_type='image/jpg',
+        )
+        cls.post = Post.objects.create(
+            text=constants.POST_TEXT,
+            author=cls.user,
+            image=cls.IMAGE_FILE,
         )
         cls.POST_URL = reverse('posts:post',
                                args=[cls.user.username, cls.post.id])
@@ -77,7 +88,7 @@ class TestPostForm(TestCase):
         post_data = {
             'text': 'Тест-тест',
             'group': self.group.id,
-            'image': self.IMAGE_FILE,
+            'image': self.IMAGE_FILE2,
         }
         response = self.authorized_client.post(
             constants.NEW_POST_URL,
@@ -87,12 +98,13 @@ class TestPostForm(TestCase):
         self.assertRedirects(response, constants.INDEX_URL)
         posts = response.context['page'].paginator.object_list
         self.assertEqual(len(posts), len(id_posts) + 1)
-        created_post = posts.exclude(id__in=id_posts).first()
-        self.assertEqual(created_post.text, post_data['text'])
-        self.assertEqual(created_post.group.id, post_data['group'])
-        self.assertEqual(created_post.author, self.user)
-        image_file_name = created_post.image.name.split('/')[1]
-        self.assertEqual(image_file_name, post_data['image'].name)
+        created_posts = posts.exclude(id__in=id_posts)
+        for post in created_posts:
+            self.assertEqual(post.text, post_data['text'])
+            self.assertEqual(post.group.id, post_data['group'])
+            self.assertEqual(post.author, self.user)
+            image_file_name = post.image.name.split('/')[1]
+            self.assertEqual(image_file_name, post_data['image'].name)
 
     def test_correct_change_post(self):
         """Проверка корректного редактирования поста"""
@@ -100,7 +112,7 @@ class TestPostForm(TestCase):
         modified_post_data = {
             'text': 'Изменённый текст',
             'group': self.group2.id,
-            'image': self.IMAGE_FILE2,
+            'image': self.IMAGE_FILE3,
         }
         response = self.authorized_client.post(
             self.POST_EDIT_URL,
@@ -116,11 +128,13 @@ class TestPostForm(TestCase):
         image_file_name = post.image.name.split('/')[1]
         self.assertEqual(image_file_name, modified_post_data['image'].name)
 
-    def test_guest_creation_and_editing_post(self):
-        """Проверка, что гость не может создать или редактировать пост"""
+    def test_guest_creation_post(self):
+        """Проверка, что гость не может создать пост"""
         expected_posts_count = Post.objects.count()
         post_data = {
             'text': 'Тест-тестовый',
+            'group': self.group.id,
+            'image': self.IMAGE_FILE3,
         }
         response = self.guest_client.post(
             constants.NEW_POST_URL,
@@ -130,8 +144,19 @@ class TestPostForm(TestCase):
         self.assertRedirects(response,
                              f'{self.LOGIN_URL}?next={constants.NEW_POST_URL}')
         self.assertEqual(Post.objects.count(), expected_posts_count)
+
+    def test_guest_edit_post(self):
+        """Проверка, что гость не может редактировать пост"""
+        expected_post = self.post
+        modified_post_data = {
+            'text': 'Changed text',
+            'group': self.group3.id,
+            'image': self.IMAGE_FILE3,
+        }
         self.guest_client.post(
             self.POST_EDIT_URL,
-            data=post_data,
+            data=modified_post_data,
         )
-        self.assertNotEqual(self.post.text, post_data['text'])
+        self.assertEqual(self.post.text, expected_post.text)
+        self.assertEqual(self.post.group, expected_post.group)
+        self.assertEqual(self.post.image, expected_post.image)

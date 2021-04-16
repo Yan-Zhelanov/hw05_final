@@ -43,7 +43,7 @@
       </div>
       <!-- Дата публикации поста -->
       <small class="text-muted">
-        {% if not group and post.group %}
+        {% if show_group and post.group %}
           <a class="link-red"
             href="{% url 'posts:group' slug=post.group.slug %}">
             {{ post.group }}

@@ -1,4 +1,4 @@
-{% if user.is_authenticated and user.follower.count > 0 %} 
+{% if user.is_authenticated and request.user.follower.count > 0 %} 
   <div class="row">
     <ul class="nav nav-tabs">
       <li class="nav-item">

@@ -13,7 +13,9 @@ def index(request):
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
     return render(request, 'index.html', {
-        'page': page
+        'page': page,
+        'index': True,
+        'show_group': True,
     })
 
 
@@ -25,24 +27,28 @@ def follow_index(request):
     page = paginator.get_page(page_number)
     return render(request, 'follow.html', {
         'page': page,
+        'follow': True,
+        'show_group': True,
     })
 
 
 @login_required
 def profile_follow(request, username):
-    if request.user.username != username:
-        profile = get_object_or_404(User, username=username)
-        if not request.user.follower.filter(author=profile).exists():
-            request.user.follower.create(author=profile)
+    if not (request.user.username == username
+            or Follow.objects.filter(user=request.user,
+                                     author__username=username).exists()):
+        Follow.objects.create(
+            user=request.user,
+            author=get_object_or_404(User, username=username)
+        )
     return redirect('posts:profile', username)
-    # поначалу тут был request.GET.get('next'), но pytest не пускает. = (
+    # request.GET.get('next')
 
 
 @login_required
 def profile_unfollow(request, username):
-    follow = get_object_or_404(Follow, author__username=username,
-                               user=request.user)
-    follow.delete()
+    get_object_or_404(Follow, user=request.user,
+                      author__username=username).delete()
     return redirect('posts:profile', username)
 
 
@@ -55,6 +61,7 @@ def group_posts(request, slug):
     return render(request, 'group.html', {
         'group': group,
         'page': page,
+        'show_group': False,
     })
 
 
@@ -71,26 +78,28 @@ def new_post(request):
 
 
 def profile(request, username):
-    author = get_object_or_404(User, username=username)
-    following = False
-    if request.user.is_authenticated:
-        following = request.user.follower.filter(author=author)
+    author = request.user
+    if request.user.username != username:
+        author = get_object_or_404(User, username=username)
+    following = (request.user.is_authenticated
+                 and Follow.objects.filter(user=request.user, author=author))
     posts = author.posts.all()
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
     return render(request, 'profile.html', {
-        'author': author,
+        'author': author or request.user,
         'following': following,
         'page': page,
+        'show_group': True,
     })
 
 
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, pk=post_id)
-    following = False
-    if request.user.is_authenticated:
-        following = request.user.follower.filter(author=post.author)
+    following = (request.user.is_authenticated
+                 and Follow.objects.filter(user=request.user,
+                                           author=post.author))
     comments = post.comments.all()
     form = CommentForm()
     return render(request, 'post.html', {
@@ -99,6 +108,7 @@ def post_view(request, username, post_id):
         'post': post,
         'form': form,
         'comments': comments,
+        'show_group': True,
     })
 
 
