@@ -14,8 +14,6 @@ def index(request):
     page = paginator.get_page(page_number)
     return render(request, 'index.html', {
         'page': page,
-        'index': True,
-        'show_group': True,
     })
 
 
@@ -27,8 +25,6 @@ def follow_index(request):
     page = paginator.get_page(page_number)
     return render(request, 'follow.html', {
         'page': page,
-        'follow': True,
-        'show_group': True,
     })
 
 
@@ -61,7 +57,6 @@ def group_posts(request, slug):
     return render(request, 'group.html', {
         'group': group,
         'page': page,
-        'show_group': False,
     })
 
 
@@ -78,37 +73,35 @@ def new_post(request):
 
 
 def profile(request, username):
-    author = request.user
-    if request.user.username != username:
-        author = get_object_or_404(User, username=username)
+    author = get_object_or_404(User, username=username)
     following = (request.user.is_authenticated
+                 and request.user.username != username
                  and Follow.objects.filter(user=request.user, author=author))
     posts = author.posts.all()
     paginator = Paginator(posts, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
     return render(request, 'profile.html', {
-        'author': author or request.user,
+        'author': author,
         'following': following,
         'page': page,
-        'show_group': True,
     })
 
 
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, pk=post_id)
     following = (request.user.is_authenticated
+                 and request.user.username != username
                  and Follow.objects.filter(user=request.user,
                                            author=post.author))
     comments = post.comments.all()
     form = CommentForm()
     return render(request, 'post.html', {
         'author': post.author,
-        'following': following,
+        'following': following or None,
         'post': post,
         'form': form,
         'comments': comments,
-        'show_group': True,
     })
 
 

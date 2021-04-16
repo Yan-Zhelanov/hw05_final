@@ -1,8 +1,9 @@
-{% if user.is_authenticated and request.user.follower.count > 0 %} 
+ {% if user.is_authenticated %}
+ <!-- А как же творческий подход? Если я не хочу чтобы кнопки отображались человеку без подписок? -->
   <div class="row">
     <ul class="nav nav-tabs">
       <li class="nav-item">
-        <a class="nav-link link-red {% if index %}active{% endif %}" href="{% url 'posts:index' %}">
+        <a class="nav-link link-red {% if not follow %}active{% endif %}" href="{% url 'posts:index' %}">
           Все авторы
         </a>
       </li>

@@ -56,7 +56,7 @@ class StaticURLTests(TestCase):
             [constants.PROFILE_FOLLOW_URL, self.other_client, 302],
             [constants.PROFILE_UNFOLLOW_URL, self.guest_client, 302],
             [constants.PROFILE_UNFOLLOW_URL, self.other_client, 302],
-            [None, self.guest_client, 404]
+            ['ZXiz0vKDN25CsTl4Jb5VwT6iLOmnHbJxYSZRgz', self.guest_client, 404]
         ]
         for url, client, expected_status_code in urls:
             with self.subTest(url=url):

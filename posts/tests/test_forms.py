@@ -51,6 +51,11 @@ class TestPostForm(TestCase):
             content=constants.IMAGE,
             content_type='image/jpg',
         )
+        cls.IMAGE_FILE4 = SimpleUploadedFile(
+            name='image4.jpg',
+            content=constants.IMAGE,
+            content_type='image/jpg',
+        )
         cls.post = Post.objects.create(
             text=constants.POST_TEXT,
             author=cls.user,
@@ -99,12 +104,13 @@ class TestPostForm(TestCase):
         posts = response.context['page'].paginator.object_list
         self.assertEqual(len(posts), len(id_posts) + 1)
         created_posts = posts.exclude(id__in=id_posts)
-        for post in created_posts:
-            self.assertEqual(post.text, post_data['text'])
-            self.assertEqual(post.group.id, post_data['group'])
-            self.assertEqual(post.author, self.user)
-            image_file_name = post.image.name.split('/')[1]
-            self.assertEqual(image_file_name, post_data['image'].name)
+        self.assertEqual(len(created_posts), 1)
+        post = created_posts.first()
+        self.assertEqual(post.text, post_data['text'])
+        self.assertEqual(post.group.id, post_data['group'])
+        self.assertEqual(post.author, self.user)
+        image_file_name = post.image.name.split('/')[1]
+        self.assertEqual(image_file_name, post_data['image'].name)
 
     def test_correct_change_post(self):
         """Проверка корректного редактирования поста"""
@@ -147,16 +153,16 @@ class TestPostForm(TestCase):
 
     def test_guest_edit_post(self):
         """Проверка, что гость не может редактировать пост"""
-        expected_post = self.post
         modified_post_data = {
             'text': 'Changed text',
             'group': self.group3.id,
-            'image': self.IMAGE_FILE3,
+            'image': self.IMAGE_FILE4,
         }
         self.guest_client.post(
             self.POST_EDIT_URL,
             data=modified_post_data,
         )
-        self.assertEqual(self.post.text, expected_post.text)
-        self.assertEqual(self.post.group, expected_post.group)
-        self.assertEqual(self.post.image, expected_post.image)
+        post = Post.objects.get(pk=self.post.id)
+        self.assertEqual(post.text, self.post.text)
+        self.assertEqual(post.group, self.post.group)
+        self.assertEqual(post.image, self.post.image)
