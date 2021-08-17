@@ -23,6 +23,10 @@ pip install -r requirements.txt
 ```bash
 python manage.py migrate
 ```
+Соберите статику:
+```bash
+python manage.py collectstatic
+```
 И запускайте сервер:
 ```bash
 python manage.py runserver
@@ -33,4 +37,4 @@ python manage.py runserver
 ```bash
 python manage.py test -v2
 ```
-Все тесты расположены в папке: ```./posts/tests/```
+Всего написано 27 тестов, они расположены в папке: ```./posts/tests/```
